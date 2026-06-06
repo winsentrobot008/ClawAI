@@ -797,7 +797,7 @@ async def get_scheduler_agents():
 
 
 # ── POST /api/scheduler/execute-task — 触发任务执行 ─────────
-@ app.post("/api/scheduler/execute-task")
+@app.post("/api/scheduler/execute-task")
 async def execute_task(body: dict):
     """触发 Worker 执行指定任务"""
     task_id = body.get("task_id")
@@ -829,7 +829,7 @@ async def execute_task(body: dict):
 
 
 # ── GET /api/config/depth — 获取/设置拆解层级 ─────────────
-@ app.get("/api/config/depth")
+@app.get("/api/config/depth")
 async def get_depth():
     """获取当前拆解层级配置"""
     try:
@@ -848,7 +848,7 @@ async def get_depth():
     return {"depth": 5}
 
 
-@ app.put("/api/config/depth")
+@app.put("/api/config/depth")
 async def set_depth(body: dict):
     """设置拆解层级（2或5）"""
     depth = body.get("depth", 5)
