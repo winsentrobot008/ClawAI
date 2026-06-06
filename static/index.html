@@ -284,6 +284,11 @@
 <div class="header">
   <h1>🎮 <span>LiveBench</span> Dashboard</h1>
   <div style="display:flex;align-items:center;gap:12px;">
+    <div class="depth-selector" style="display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px 8px;">
+      <span style="font-size:13px;color:var(--text-secondary);">🧩 拆解层级</span>
+      <button class="depth-btn" id="depthBtn2" onclick="setDepth(2)" style="padding:4px 12px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text-secondary);cursor:pointer;font-size:13px;transition:all 0.2s;">2层</button>
+      <button class="depth-btn active-depth" id="depthBtn5" onclick="setDepth(5)" style="padding:4px 12px;border:1px solid var(--accent);border-radius:4px;background:rgba(88,166,255,0.15);color:var(--accent);cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;">5层</button>
+    </div>
     <div class="ws-indicator" id="wsIndicator">● 实时连接</div>
     <div class="status">
       <span class="status-dot" id="apiStatusDot"></span>
@@ -960,10 +965,66 @@ function addStreamEntry(type, data) {
 }
 
 // ============================================================
+// Depth Configuration (2层/5层)
+// ============================================================
+async function loadDepth() {
+  try {
+    const res = await fetch(API_BASE + '/api/config/depth');
+    const data = await res.json();
+    const depth = data.depth || 5;
+    updateDepthUI(depth);
+  } catch(e) {
+    console.log('Could not load depth config:', e.message);
+  }
+}
+
+async function setDepth(depth) {
+  try {
+    const res = await fetch(API_BASE + '/api/config/depth', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ depth: depth }),
+    });
+    const data = await res.json();
+    if (data.saved) {
+      updateDepthUI(depth);
+      addStreamEntry('system', `🧩 拆解层级已切换为 ${depth} 层`);
+    }
+  } catch(e) {
+    console.log('Could not set depth:', e.message);
+  }
+}
+
+function updateDepthUI(depth) {
+  const btn2 = $('depthBtn2');
+  const btn5 = $('depthBtn5');
+  if (depth === 2) {
+    btn2.style.borderColor = 'var(--accent)';
+    btn2.style.background = 'rgba(88,166,255,0.15)';
+    btn2.style.color = 'var(--accent)';
+    btn2.style.fontWeight = '600';
+    btn5.style.borderColor = 'var(--border)';
+    btn5.style.background = 'var(--bg)';
+    btn5.style.color = 'var(--text-secondary)';
+    btn5.style.fontWeight = 'normal';
+  } else {
+    btn5.style.borderColor = 'var(--accent)';
+    btn5.style.background = 'rgba(88,166,255,0.15)';
+    btn5.style.color = 'var(--accent)';
+    btn5.style.fontWeight = '600';
+    btn2.style.borderColor = 'var(--border)';
+    btn2.style.background = 'var(--bg)';
+    btn2.style.color = 'var(--text-secondary)';
+    btn2.style.fontWeight = 'normal';
+  }
+}
+
+// ============================================================
 // Init
 // ============================================================
 checkAPI();
 loadDashboard();
+loadDepth();
 connectWS();
 
 // Auto refresh every 10 seconds

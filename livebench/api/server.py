@@ -796,6 +796,82 @@ async def get_scheduler_agents():
     return {"agents": agents}
 
 
+# ── POST /api/scheduler/execute-task — 触发任务执行 ─────────
+@ app.post("/api/scheduler/execute-task")
+async def execute_task(body: dict):
+    """触发 Worker 执行指定任务"""
+    task_id = body.get("task_id")
+    if not task_id:
+        raise HTTPException(status_code=400, detail="task_id is required")
+
+    scheduler = _get_scheduler()
+    task = scheduler.get_task_status(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+
+    # 启动后台任务执行
+    signature = task.get("agent", "ClawAgent-001")
+    runner = scheduler._runners.get(signature)
+    if not runner:
+        raise HTTPException(status_code=404, detail=f"Runner for {signature} not found")
+
+    # 异步执行（不阻塞响应）
+    asyncio.create_task(scheduler._execute_task(
+        task_id=task_id,
+        runner=runner,
+        task_prompt=task.get("prompt", ""),
+        occupation=task.get("occupation", "Software Engineer"),
+        sector=task.get("sector", "Technology"),
+        max_payment=task.get("max_payment", 50.0),
+    ))
+
+    return {"status": "started", "task_id": task_id}
+
+
+# ── GET /api/config/depth — 获取/设置拆解层级 ─────────────
+@ app.get("/api/config/depth")
+async def get_depth():
+    """获取当前拆解层级配置"""
+    try:
+        controls_path = Path(__file__).parent.parent.parent / "governance_ui.py"
+        # 读取 global_controls.json
+        gc_path = Path(__file__).parent.parent.parent / "ClawAI" / "global_controls.json"
+        alt_path = Path(__file__).parent.parent.parent / "global_controls.json"
+        
+        for p in [gc_path, alt_path]:
+            if p.exists():
+                with open(p) as f:
+                    controls = json.load(f)
+                return {"depth": controls.get("decomposition_depth", 5)}
+    except Exception:
+        pass
+    return {"depth": 5}
+
+
+@ app.put("/api/config/depth")
+async def set_depth(body: dict):
+    """设置拆解层级（2或5）"""
+    depth = body.get("depth", 5)
+    depth = max(2, min(5, int(depth)))  # Clamp 2-5
+    
+    for p in [
+        Path(__file__).parent.parent.parent / "ClawAI" / "global_controls.json",
+        Path(__file__).parent.parent.parent / "global_controls.json",
+    ]:
+        if p.exists():
+            try:
+                with open(p) as f:
+                    controls = json.load(f)
+                controls["decomposition_depth"] = depth
+                with open(p, "w") as f:
+                    json.dump(controls, f, indent=2)
+                return {"depth": depth, "saved": True}
+            except Exception:
+                pass
+    
+    return {"depth": depth, "saved": False}
+
+
 # =====================================================================
 # WebSocket 实时流（增强版）
 # =====================================================================
