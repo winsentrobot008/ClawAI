@@ -168,10 +168,17 @@ class ConnectionManager:
 
     async def broadcast(self, message: dict):
         """Broadcast message to all connected clients"""
+        dead = []
         for connection in self.active_connections:
             try:
                 await connection.send_json(message)
-            except:
+            except Exception:
+                dead.append(connection)
+        # Clean up dead connections to prevent accumulation
+        for conn in dead:
+            try:
+                self.active_connections.remove(conn)
+            except ValueError:
                 pass
 
 
@@ -964,18 +971,26 @@ async def broadcast_message(message: dict):
     return {"status": "broadcast sent", "clients": len(manager.active_connections)}
 
 
-# File watcher for live updates (optional, for when agents are running)
+# Proactive heartbeat counter — ensures WebSocket stays alive even when no data changes
+_last_heartbeat_time = 0.0
+
+
 async def watch_agent_files():
     """
-    Watch agent data files for changes and broadcast updates
-    This runs as a background task
+    Watch agent data files for changes and broadcast updates.
+    Runs as a background task with proactive heartbeat to prevent
+    Hugging Face Spaces proxy from closing idle WebSocket connections.
     """
     import time
     last_modified = {}
+    global _last_heartbeat_time
 
     while True:
+        now = time.time()
         try:
             if DATA_PATH.exists():
+                any_activity = False
+
                 for agent_dir in DATA_PATH.iterdir():
                     if agent_dir.is_dir():
                         signature = agent_dir.name
@@ -999,6 +1014,7 @@ async def watch_agent_files():
                                             "signature": signature,
                                             "data": data
                                         })
+                                any_activity = True
 
                         # Check decisions file
                         decision_file = agent_dir / "decisions" / "decisions.jsonl"
@@ -1019,6 +1035,16 @@ async def watch_agent_files():
                                             "signature": signature,
                                             "data": data
                                         })
+                                any_activity = True
+
+                # Send heartbeat every 10 seconds to prevent HF Spaces proxy timeout
+                if (now - _last_heartbeat_time) >= 10:
+                    _last_heartbeat_time = now
+                    await manager.broadcast({
+                        "type": "heartbeat",
+                        "timestamp": datetime.now().isoformat(),
+                    })
+
         except Exception as e:
             print(f"Error watching files: {e}")
 
