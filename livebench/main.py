@@ -13,8 +13,8 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
-# Add project to path
-project_root = Path(__file__).parent
+# Add project to path — parent of livebench/ is the true project root
+project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 from livebench.agent.live_agent import LiveAgent

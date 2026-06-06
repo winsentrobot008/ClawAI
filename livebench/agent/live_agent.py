@@ -11,19 +11,14 @@ from pathlib import Path
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_openai import ChatOpenAI
-from agent.economic_tracker import track_response_tokens
 from dotenv import load_dotenv
 
-# Import LiveBench components
-import sys
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, project_root)
-
-from agent.economic_tracker import EconomicTracker
-from agent.message_formatter import format_tool_result_message, format_result_for_logging
-from work.task_manager import TaskManager
-from work.evaluator import WorkEvaluator
-from prompts.live_agent_prompt import (
+# Import LiveBench components — always use absolute imports for reliability
+from livebench.agent.economic_tracker import track_response_tokens, EconomicTracker
+from livebench.agent.message_formatter import format_tool_result_message, format_result_for_logging
+from livebench.work.task_manager import TaskManager
+from livebench.work.evaluator import WorkEvaluator
+from livebench.prompts.live_agent_prompt import (
     get_live_agent_system_prompt,
     get_work_task_prompt,
     format_cost_update,
