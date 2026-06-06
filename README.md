@@ -1,5 +1,5 @@
 ---
-title: ClawWork Factory
+title: ClawAI
 emoji: 🐱
 colorFrom: green
 colorTo: blue

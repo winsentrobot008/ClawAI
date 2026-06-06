@@ -21,6 +21,9 @@ fi
 echo "   DeepSeek API: $DEEPSEEK_STATUS"
 echo "============================================================"
 
+# Add project root to PYTHONPATH for Docker/Hugging Face environment
+export PYTHONPATH="/home/user/app:$PYTHONPATH"
+
 # Function to run the worker
 run_worker() {
     echo "[Worker] Starting background task worker..."
